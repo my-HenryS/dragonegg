@@ -113,7 +113,7 @@ extern "C" {
 #endif
 #include "target.h" // For targetm.
 #include "toplev.h"
-#if (GCC_MAJOR > 4)
+#if (GCC_MAJOR > 4 || GCC_MAJOR == 4 && GCC_MINOR > 8)
 #include "tree-cfg.h"
 #else
 #include "tree-flow.h"
