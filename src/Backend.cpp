@@ -63,7 +63,11 @@
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
+#if LLVM_VERSION_CODE > LLVM_VERSION(5, 0)
+#include "llvm/CodeGen/TargetSubtargetInfo.h"
+#else
 #include "llvm/Target/TargetSubtargetInfo.h"
+#endif
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm-c/Target.h"
