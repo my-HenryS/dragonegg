@@ -54,7 +54,7 @@ extern "C" {
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "print-tree.h"
 #include "stor-layout.h"
 #include "fold-const.h"
@@ -965,7 +965,7 @@ static Constant *ConvertArrayCONSTRUCTOR(tree exp, TargetFolder &Folder) {
       assert(host_integerp(first, 1) && host_integerp(last, 1) &&
              "Unknown range_expr!");
 #endif
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
       FirstIndex = tree_to_shwi(first);
       LastIndex = tree_to_shwi(last);
 #else
@@ -981,7 +981,7 @@ static Constant *ConvertArrayCONSTRUCTOR(tree exp, TargetFolder &Folder) {
 #else
       assert(host_integerp(index, 1));
 #endif
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
       FirstIndex = tree_to_shwi(index);
 #else
       FirstIndex = tree_low_cst(index, 1);

@@ -42,7 +42,7 @@ extern "C" {
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "function.h"
 #endif
 #ifndef ENABLE_BUILD_WITH_CXX

@@ -71,11 +71,13 @@ extern "C" {
 #if (GCC_MAJOR > 7)
 #include "profile-count.h"
 #endif
+#if GCC_MAJOR > 4
 #include "expr.h"
 #include "explow.h"
 #define MAX_RECOG_OPERANDS 101
 #define MAX_DUP_OPERANDS 10
 #include "recog.h"
+#endif
 #endif
 #include "langhooks.h"
 #include "output.h"
@@ -84,18 +86,24 @@ extern "C" {
 #include "target.h" // For targetm.
 #include "tm_p.h"
 #include "toplev.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "builtins.h"
+#if GCC_MAJOR > 4
+#include "cfg.h"
+#include "regs.h"
+#endif
 #include "stor-layout.h"
 #include "print-tree.h"
 #include "function.h"
-#include "cfg.h"
 #include "basic-block.h"
+#include "tree-ssa-alias.h"
+#include "internal-fn.h"
+#include "is-a.h"
+#include "gimple-expr.h"
 #include "gimple.h"
 #include "tree-cfg.h"
 #include "gimple-iterator.h"
 #include "tree-eh.h"
-#include "regs.h"
 #if (GCC_MAJOR > 7)
 #include "memmodel.h"
 #endif
@@ -115,9 +123,11 @@ extern "C" {
 void *C_alloca(size_t size) { return alloca(size); }
 #endif
 
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #define ENTRY_BLOCK_PTR         (cfun->cfg->x_entry_block_ptr)
 #define FOR_EACH_BB(BB) FOR_EACH_BB_FN (BB, cfun)
+#endif
+#if GCC_MAJOR > 4
 #define MIG_TO_GCALL(STMT) as_a<gcall *>(STMT)
 #define MIG_TO_GASM(STMT) as_a<gasm *>(STMT)
 #define MIG_TO_GSWITCH(STMT) as_a<gswitch *>(STMT)
@@ -5588,7 +5598,7 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
   case BUILT_IN_CLASSIFY_TYPE:
   case BUILT_IN_AGGREGATE_INCOMING_ADDRESS:
   case BUILT_IN_SETJMP_SETUP:
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
   case BUILT_IN_SETJMP_DISPATCHER:
 #endif
   case BUILT_IN_SETJMP_RECEIVER:
@@ -5746,7 +5756,7 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
       if (!validate_gimple_arglist(MIG_TO_GCALL(stmt), REAL_TYPE, VOID_TYPE))
         return 0;
 
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
       if (targetm.libc_has_function(function_sincos)) {
 #else
       if (TARGET_HAS_SINCOS) {
@@ -6212,14 +6222,22 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
 
     bool TreeToLLVM::EmitBuiltinEHCopyValues(GimpleTy *stmt) {
       unsigned DstRegionNo =
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#if GCC_MAJOR > 4
           tree_to_shwi(gimple_call_arg(as_a<gcall *>(stmt), 0));
+#else
+          tree_to_shwi(gimple_call_arg(stmt, 0));
+#endif
 #else
           tree_low_cst(gimple_call_arg(stmt, 0), 0);
 #endif
       unsigned SrcRegionNo =
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#if GCC_MAJOR > 4
           tree_to_shwi(gimple_call_arg(as_a<gcall *>(stmt), 1));
+#else
+          tree_to_shwi(gimple_call_arg(stmt, 1));
+#endif
 #else
           tree_low_cst(gimple_call_arg(stmt, 1), 0);
 #endif
@@ -6235,8 +6253,12 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
     bool TreeToLLVM::EmitBuiltinEHFilter(GimpleTy *stmt, Value * &Result) {
       // Lookup the local that holds the selector value for this region.
       unsigned RegionNo =
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#if GCC_MAJOR > 4
           tree_to_shwi(gimple_call_arg(as_a<gcall *>(stmt), 0));
+#else
+          tree_to_shwi(gimple_call_arg(stmt, 0));
+#endif
 #else
           tree_low_cst(gimple_call_arg(stmt, 0), 0);
 #endif
@@ -6253,8 +6275,12 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
     bool TreeToLLVM::EmitBuiltinEHPointer(GimpleTy *stmt, Value * &Result) {
       // Lookup the local that holds the exception pointer for this region.
       unsigned RegionNo =
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#if GCC_MAJOR > 4
           tree_to_shwi(gimple_call_arg(as_a<gcall *>(stmt), 0));
+#else
+          tree_to_shwi(gimple_call_arg(stmt, 0));
+#endif
 #else
           tree_low_cst(gimple_call_arg(stmt, 0), 0);
 #endif
@@ -6333,7 +6359,7 @@ bool TreeToLLVM::EmitBuiltinCall(GimpleTy *stmt, tree fndecl,
       }
 
       iwhich = 
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
           tree_to_shwi(which);
 #else
           tree_low_cst(which, 1);

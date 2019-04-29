@@ -312,7 +312,7 @@ void DebugInfo::EmitFunctionStart(tree FnDecl, Function *Fn) {
   MigDIType ContainingType;
   if (DECL_VINDEX(FnDecl) && DECL_CONTEXT(FnDecl) &&
       isa<TYPE>((DECL_CONTEXT(FnDecl)))) { // Workaround GCC PR42653
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
     if (tree_fits_uhwi_p(DECL_VINDEX(FnDecl)))
       VIndex = tree_to_shwi(DECL_VINDEX(FnDecl));
 #else

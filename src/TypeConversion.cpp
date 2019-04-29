@@ -51,7 +51,7 @@ extern "C" {
 #include "tree.h"
 
 #include "flags.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "print-tree.h"
 #include "calls.h"
 #endif

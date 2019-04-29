@@ -47,11 +47,15 @@ extern "C" {
 #include "tree.h"
 
 #include "diagnostic.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "function.h"
 #include "basic-block.h"
 #include "tree-core.h"
 #include "rtl.h"
+#include "tree-ssa-alias.h"
+#include "internal-fn.h"
+#include "is-a.h"
+#include "gimple-expr.h"
 #endif
 #include "gimple.h"
 #if GCC_VERSION_CODE > GCC_VERSION(4, 6)
@@ -81,8 +85,10 @@ extern void debug_gimple_stmt(union gimple_statement_d *);
 #include "memmodel.h"
 #include "tree-vrp.h"
 #include "ABIHack8.inc"
-#elif (GCC_MAJOR > 4)
+#elif GCC_MAJOR > 5
 #include "ABIHack6.inc"
+#elif GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#pragma error("Unimplemented yet about ABIHack4.9.inc")
 #else
 #include "ABIHack.inc"
 #endif

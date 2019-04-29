@@ -59,9 +59,13 @@
 
 struct basic_block_def;
 union gimple_statement_d;
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
+#if GCC_MAJOR > 4
 struct gimple;
 typedef struct gimple GimpleTy;
+#else
+typedef struct gimple_statement_base GimpleTy;
+#endif
 #else
 typedef union gimple_statement_d GimpleTy;
 #endif

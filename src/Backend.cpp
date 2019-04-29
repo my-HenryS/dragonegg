@@ -98,7 +98,7 @@ extern "C" {
 #include "diagnostic.h"
 #include "flags.h"
 #include "gcc-plugin.h"
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
 #include "cgraph.h"
 #include "stor-layout.h"
 #include "context.h"
@@ -232,8 +232,9 @@ static struct varpool_node *varpool_symbol(struct varpool_node *N) { return N; }
 #define FOR_EACH_VARIABLE(node) \
   for ((node) = varpool_nodes; (node); (node) = (node)->next)
 
-#elif (GCC_MAJOR > 4)
+#elif GCC_VERSION_CODE > GCC_VERSION(4, 8)
 
+#if GCC_MAJOR > 4
 #define asm_nodes symtab->first_asm_symbol()
 
 static inline struct cgraph_node *
@@ -245,6 +246,7 @@ static inline struct varpool_node *
 ipa_ref_referring_varpool_node(struct ipa_ref *ref) {
   return reinterpret_cast<varpool_node *>(ref->referring);
 }
+#endif
 
 static symtab_node *cgraph_symbol(cgraph_node *N) { return N; }
 static symtab_node *varpool_symbol(varpool_node *N) { return N; }
@@ -1361,6 +1363,8 @@ static void emit_varpool_aliases(struct varpool_node *node) {
     emit_alias(varpool_symbol(alias)->decl,
 #if (GCC_MAJOR > 4)
                alias->get_constructor()
+#elif GCC_VERSION_CODE > GCC_VERSION(4, 8)
+               alias->alias_target
 #else
                alias->alias_of
 #endif
@@ -2117,7 +2121,7 @@ static unsigned int rtl_emit_function(void) {
 }
 
 /// pass_rtl_emit_function - RTL pass that converts a function to LLVM IR.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct rtl_opt_pass pass_rtl_emit_function = { {
   RTL_PASS, "rtl_emit_function",         /* name */
 #if (GCC_MINOR >= 8)
@@ -2140,6 +2144,10 @@ const pass_data pass_data_rtl_emit_function = {
   RTL_PASS,                              /* type */
   "rtl_emit_function",                   /* name */
   OPTGROUP_NONE,                         /* optinfo_flags */
+#if GCC_MAJOR < 5
+  true,                                  /* has_gate */
+  true,                                  /* has_execute */
+#endif
   TV_NONE,                               /* tv_id */
   PROP_ssa | PROP_gimple_leh | PROP_cfg, /* properties_required */
   0,                                     /* properties_provided */
@@ -2158,11 +2166,11 @@ public:
     return this;
   }
 
-  bool gate(function *) final override {
+  bool gate(function *) {
     return true;
   }
 
-  unsigned int execute(function *) final override {
+  unsigned int execute(function *) {
     return rtl_emit_function();
   }
 };
@@ -2221,6 +2229,8 @@ static void emit_varpool_weakrefs() {
       emit_alias(varpool_symbol(vnode)->decl,
 #if (GCC_MAJOR > 4)
                  vnode->get_constructor() ? vnode->get_constructor()
+#elif GCC_VERSION_CODE > GCC_VERSION(4, 8)
+                 vnode->alias_target ? vnode->alias_target
 #else
                  vnode->alias_of ? vnode->alias_of
 #endif
@@ -2486,7 +2496,7 @@ static void llvm_finish(void */*gcc_data*/, void */*user_data*/) {
 static bool gate_null(void) { return false; }
 
 /// pass_gimple_null - Gimple pass that does nothing.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct gimple_opt_pass pass_gimple_null = { {
   GIMPLE_PASS, "*gimple_null", /* name */
 #if (GCC_MINOR >= 8)
@@ -2509,6 +2519,10 @@ const pass_data pass_data_gimple_null = {
   GIMPLE_PASS,    /* type */
   "*gimple_null", /* name */
   OPTGROUP_NONE,  /* optinfo_flags */
+#if GCC_MAJOR < 5
+  true,           /* has_gate */
+  false,          /* has_execute */
+#endif
   TV_NONE,        /* tv_id */
   0,              /* properties_required */
   0,              /* properties_provided */
@@ -2522,7 +2536,7 @@ public:
   pass_gimple_null(gcc::context *ctxt)
       : gimple_opt_pass(pass_data_gimple_null, ctxt) {}
   opt_pass *clone() final override { return this;/*new pass_gimple_null(m_ctxt);*/ }
-  bool gate(function *) final override { return gate_null(); }
+  bool gate(function *) { return gate_null(); }
 };
 #endif
 
@@ -2544,7 +2558,7 @@ static bool gate_correct_state(void) { return true; }
 
 /// pass_gimple_correct_state - Gimple pass that corrects the cgraph state so
 /// newly inserted functions are processed before being converted to LLVM IR.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct gimple_opt_pass pass_gimple_correct_state = { {
   GIMPLE_PASS, "*gimple_correct_state", /* name */
 #if (GCC_MINOR >= 8)
@@ -2567,6 +2581,10 @@ const pass_data pass_data_gimple_correct_state = {
   GIMPLE_PASS,
   "*gimple_correct_state",
   OPTGROUP_NONE,
+#if GCC_MAJOR < 5
+  true,           /* has_gate */
+  true,           /* has_execute */
+#endif
   TV_NONE,
   0,
   0,
@@ -2580,14 +2598,14 @@ public:
   pass_gimple_correct_state(gcc::context *ctxt)
       : gimple_opt_pass(pass_data_gimple_correct_state, ctxt) {}
 
-  bool gate(function *) final override { return gate_correct_state(); }
+  bool gate(function *) { return gate_correct_state(); }
 
-  unsigned int execute(function *) final override { return execute_correct_state(); }
+  unsigned int execute(function *) { return execute_correct_state(); }
 };
 #endif
 
 /// pass_ipa_null - IPA pass that does nothing.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct ipa_opt_pass_d pass_ipa_null = {
   { IPA_PASS, "*ipa_null", /* name */
 #if (GCC_MINOR >= 8)
@@ -2624,6 +2642,10 @@ const pass_data pass_data_ipa_null = {
   IPA_PASS,      /* type */
   "*ipa_null",   /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+#if GCC_MAJOR < 5
+  true,          /* has_gate */
+  false,         /* has_execute */
+#endif
   TV_NONE,       /* tv_id */
   0,             /* properties_required */
   0,             /* properties_provided */
@@ -2647,16 +2669,14 @@ public:
                        NULL) /* variable_transform */
     {}
   opt_pass *clone() final override { return this;/*new pass_ipa_null(m_ctxt);*/ }
-  bool gate(function *) final override { return gate_null(); }
+  bool gate(function *) { return gate_null(); }
 };
 #endif
 
 /// pass_rtl_null - RTL pass that does nothing.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct rtl_opt_pass pass_rtl_null = { { RTL_PASS, "*rtl_null", /* name */
-#if (GCC_MINOR >= 8)
                                                OPTGROUP_NONE,/* optinfo_flags */
-#endif
                                                gate_null,             /* gate */
                                                NULL,    /* execute */
                                                NULL,    /* sub */
@@ -2674,6 +2694,10 @@ const pass_data pass_data_rtl_null = {
   RTL_PASS,      /* type */
   "*rtl_null",   /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+#if GCC_MAJOR < 5
+  true,          /* has_gate */
+  false,         /* has_execute */
+#endif
   TV_NONE,       /* tv_id */
   0,             /* properties_required */
   0,             /* properties_provided */
@@ -2687,17 +2711,15 @@ public:
   pass_rtl_null(gcc::context *ctxt) : rtl_opt_pass(pass_data_rtl_null, ctxt) {}
 
   opt_pass *clone() final override { return this;/*new pass_rtl_null(m_ctxt);*/ }
-  bool gate(function *) final override { return gate_null(); }
+  bool gate(function *) { return gate_null(); }
 };
 #endif
 
 /// pass_simple_ipa_null - Simple IPA pass that does nothing.
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
 static struct simple_ipa_opt_pass pass_simple_ipa_null = { {
   SIMPLE_IPA_PASS, "*simple_ipa_null", /* name */
-#if (GCC_MINOR >= 8)
   OPTGROUP_NONE,                       /* optinfo_flags */
-#endif
   gate_null,                           /* gate */
   NULL,                                /* execute */
   NULL,                                /* sub */
@@ -2715,6 +2737,10 @@ const pass_data pass_data_simple_ipa_null = {
   SIMPLE_IPA_PASS,    /* type */
   "*simple_ipa_null", /* name */
   OPTGROUP_NONE,      /* optinfo_flags */
+#if GCC_MAJOR < 5
+  true,               /* has_gate */
+  false,              /* has_execute */
+#endif
   TV_NONE,            /* tv_id */
   0,                  /* properties_required */
   0,                  /* properties_provided */
@@ -2728,7 +2754,7 @@ public:
   pass_simple_ipa_null(gcc::context *ctxt)
       : simple_ipa_opt_pass(pass_data_simple_ipa_null, ctxt) {}
   opt_pass *clone() final override { return this;/*new pass_simple_ipa_null(m_ctxt);*/ }
-  bool gate(function *) final override { return gate_null(); }
+  bool gate(function *) { return gate_null(); }
 };
 #endif
 
@@ -2935,7 +2961,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_lower_vector.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -2959,7 +2985,7 @@ int __attribute__((visibility("default"))) plugin_init(
     // those generated by OMP expansion, are processed before being converted to
     // LLVM IR.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_correct_state.pass;
 #else
         new pass_gimple_correct_state(g);
@@ -2971,7 +2997,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_early_local_passes::pass_all_early_optimizations.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -2992,7 +3018,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_increase_alignment.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_simple_ipa_null.pass;
 #else
         new pass_simple_ipa_null(g);
@@ -3021,7 +3047,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_cp.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_ipa_null.pass;
 #else
         new pass_ipa_null(g);
@@ -3035,7 +3061,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_inline.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_ipa_null.pass;
 #else
         new pass_ipa_null(g);
@@ -3047,7 +3073,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_pure_const.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_ipa_null.pass;
 #else
         new pass_ipa_null(g);
@@ -3059,7 +3085,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_reference.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_ipa_null.pass;
 #else
         new pass_ipa_null(g);
@@ -3080,7 +3106,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Turn off pass_ipa_pta.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_simple_ipa_null.pass;
 #else
         new pass_simple_ipa_null(g);
@@ -3103,7 +3129,7 @@ int __attribute__((visibility("default"))) plugin_init(
   // Disable all LTO passes.
 #if (GCC_MAJOR < 5)
   pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_MINOR < 9
       &pass_ipa_null.pass;
 #else
       new pass_ipa_null(g);
@@ -3116,7 +3142,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
 #if (GCC_MAJOR < 5)
   pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_MINOR < 9
       &pass_ipa_null.pass;
 #else
       new pass_ipa_null(g);
@@ -3145,7 +3171,7 @@ int __attribute__((visibility("default"))) plugin_init(
   if (!EnableGCCOptimizations) {
     // Disable pass_lower_eh_dispatch.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3157,7 +3183,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_all_optimizations.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3171,7 +3197,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_lower_complex_O0.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3183,7 +3209,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_cleanup_eh.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3195,7 +3221,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_lower_resx.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3207,7 +3233,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_nrv.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3220,7 +3246,7 @@ int __attribute__((visibility("default"))) plugin_init(
     // Disable pass_mudflap_2. ???
 #if (GCC_MAJOR < 5)
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_MINOR < 9
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3233,7 +3259,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
     // Disable pass_cleanup_cfg_post_optimizing.
     pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
         &pass_gimple_null.pass;
 #else
         new pass_gimple_null(g);
@@ -3248,7 +3274,7 @@ int __attribute__((visibility("default"))) plugin_init(
 
   // Replace rtl expansion with a pass that converts functions to LLVM IR.
   pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
       &pass_rtl_emit_function.pass;
 #else
       new pass_rtl_emit_function(g);
@@ -3263,7 +3289,7 @@ int __attribute__((visibility("default"))) plugin_init(
   pass_info.pass = &pass_gimple_null.pass;
 #else
   pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
       &pass_rtl_null.pass;
 #else
       new pass_rtl_null(g);
@@ -3275,7 +3301,7 @@ int __attribute__((visibility("default"))) plugin_init(
   register_callback(plugin_name, PLUGIN_PASS_MANAGER_SETUP, NULL, &pass_info);
 
   pass_info.pass =
-#if (GCC_MAJOR < 5)
+#if GCC_VERSION_CODE < GCC_VERSION(4, 9)
       &pass_rtl_null.pass;
 #else
       new pass_rtl_null(g);

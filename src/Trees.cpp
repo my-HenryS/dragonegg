@@ -48,6 +48,7 @@ extern "C" {
 
 // Trees header.
 #include "dragonegg/Trees.h"
+#include "dragonegg/Internals.h"
 
 using namespace llvm;
 
@@ -213,7 +214,7 @@ bool isInt64(const_tree t, bool Unsigned) {
     return false;
   if (HOST_BITS_PER_WIDE_INT == 64)
     return
-#if (GCC_MAJOR > 4)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
         tree_fits_uhwi_p(t)
 #else
         host_integerp(t, Unsigned)
