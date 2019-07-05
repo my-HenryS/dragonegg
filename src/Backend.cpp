@@ -63,7 +63,7 @@
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
-#include "llvm/Target/TargetSubtargetInfo.h"
+#include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm-c/Target.h"
@@ -383,14 +383,14 @@ static bool SizeOfGlobalMatchesDecl(GlobalValue *GV, tree decl) {
   uint64_t gcc_size = getInt64(DECL_SIZE(decl), true);
   const DataLayout *DL =
 #if LLVM_VERSION_CODE > LLVM_VERSION(3, 8)
-      TheModule->getDataLayout();
+      &(TheModule->getDataLayout());
 #else
       TheTarget->getSubtargetImpl()->getDataLayout();
 #endif
   unsigned Align = 8 * DL->getABITypeAlignment(Ty);
   return
 #if LLVM_VERSION_CODE > LLVM_VERSION(3, 8)
-       TheModule->getDataLayout()->getTypeAllocSizeInBits(Ty)
+       TheModule->getDataLayout().getTypeAllocSizeInBits(Ty)
 #else
        TheTarget->getSubtargetImpl()->getDataLayout()->getTypeAllocSizeInBits(Ty)
 #endif
@@ -686,7 +686,7 @@ static void CreateTargetMachine(const std::string &TargetTriple) {
                                        CodeGenOptLevel());
 
 #if LLVM_VERSION_CODE > LLVM_VERSION(3, 8)
-  assert(TheModule->getDataLayout()->isBigEndian() == BYTES_BIG_ENDIAN);
+  assert(TheModule->getDataLayout().isBigEndian() == BYTES_BIG_ENDIAN);
 #else
   assert(TheTarget->getSubtargetImpl()->getDataLayout()->isBigEndian() == BYTES_BIG_ENDIAN);
 #endif

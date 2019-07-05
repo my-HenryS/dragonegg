@@ -39,7 +39,7 @@ COMMON_FLAGS=-Wall -Wextra
 ifdef ENABLE_LLVM_PLUGINS
 COMMON_FLAGS+=-DENABLE_LLVM_PLUGINS
 else
-COMMON_FLAGS+=-fvisibility=hidden
+COMMON_FLAGS+=-fvisibility=default
 endif
 CFLAGS+=$(COMMON_FLAGS) $(shell $(LLVM_CONFIG) --cflags)
 LLVM_CXXFLAGS=$(shell $(LLVM_CONFIG) --cxxflags)
@@ -140,7 +140,7 @@ $(TARGET_UTIL_OBJECTS): %.o : $(TOP_DIR)/utils/%.cpp
 $(TARGET_UTIL): $(TARGET_UTIL_OBJECTS)
 	@echo Linking $@
 	$(QUIET)$(CXX) -o $@ $^ \
-	$(shell $(LLVM_CONFIG) --libs support) \
+	$(shell $(LLVM_CONFIG) --libs support --system-libs) \
 	$(LD_OPTIONS)
 
 %.o : $(SRC_DIR)/%.cpp $(TARGET_UTIL)

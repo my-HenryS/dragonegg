@@ -462,7 +462,14 @@ void DebugInfo::EmitDeclare(tree decl, unsigned Tag, StringRef Name, tree type,
 #if LLVM_VERSION_CODE > LLVM_VERSION(3, 8)
   llvm::DILocalVariable *D = Builder.createAutoVariable(
       VarScope, Name, getOrCreateFile(Loc.file), Loc.line, Ty, optimize);
-  DbgDeclareInst *DbgDecl = FindAllocaDbgDeclare(AI);
+#if LLVM_VERSION_CODE > LLVM_VERSION(5, 0)
+    TinyPtrVector<DbgInfoIntrinsic *> DbgDeclares = FindDbgAddrUses(AI);
+    DbgInfoIntrinsic *DbgDecl = NULL;
+    if(!DbgDeclares.empty())
+     DbgDecl = DbgDeclares.front();
+#else
+        DbgDeclareInst *DbgDecl = FindAllocaDbgDeclare(AI);
+#endif
 #else
   llvm::DIVariable D = Builder.createLocalVariable(
       Tag, VarScope, Name, getOrCreateFile(Loc.file), Loc.line, Ty, optimize);
@@ -1032,7 +1039,7 @@ MigDIType DebugInfo::createStructType(tree type) {
       unsigned VIndex = 0;
       MigDIType ContainingType;
       if (DECL_VINDEX(Member)) {
-#if LLVM_VERSION_CODE > LLVM_VERSION(3, 8)
+#if GCC_VERSION_CODE > GCC_VERSION(4, 8)
         if (tree_fits_uhwi_p(DECL_VINDEX(Member)))
           VIndex = tree_to_shwi(DECL_VINDEX(Member));
 #else
@@ -1521,7 +1528,7 @@ MigDISubprogram DebugInfo::CreateSubprogramDefinition(
 Instruction *DebugInfo::InsertDeclare(Value *Storage, DIVariable D,
                                       Instruction *InsertBefore) {
   assert(Storage && "no storage passed to dbg.declare");
-  assert(D.Verify() && "empty DIVariable passed to dbg.declare");
+  //assert(D.Verify() && "empty DIVariable passed to dbg.declare");
   if (!DeclareFn)
     DeclareFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_declare);
 
@@ -1540,7 +1547,7 @@ Instruction *DebugInfo::InsertDeclare(Value *Storage, DIVariable D,
 Instruction *DebugInfo::InsertDeclare(Value *Storage, DIVariable D,
                                       BasicBlock *InsertAtEnd) {
   assert(Storage && "no storage passed to dbg.declare");
-  assert(D.Verify() && "invalid DIVariable passed to dbg.declare");
+  //assert(D.Verify() && "invalid DIVariable passed to dbg.declare");
   if (!DeclareFn)
     DeclareFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_declare);
 
@@ -1565,7 +1572,7 @@ Instruction *DebugInfo::InsertDeclare(Value *Storage, DIVariable D,
 Instruction *DebugInfo::InsertDbgValueIntrinsic(
     Value *V, uint64_t Offset, DIVariable D, Instruction *InsertBefore) {
   assert(V && "no value passed to dbg.value");
-  assert(D.Verify() && "invalid DIVariable passed to dbg.value");
+  //assert(D.Verify() && "invalid DIVariable passed to dbg.value");
   if (!ValueFn)
     ValueFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_value);
 
@@ -1589,7 +1596,7 @@ Instruction *DebugInfo::InsertDbgValueIntrinsic(
 Instruction *DebugInfo::InsertDbgValueIntrinsic(
     Value *V, uint64_t Offset, DIVariable D, BasicBlock *InsertAtEnd) {
   assert(V && "no value passed to dbg.value");
-  assert(D.Verify() && "invalid DIVariable passed to dbg.value");
+  //assert(D.Verify() && "invalid DIVariable passed to dbg.value");
   if (!ValueFn)
     ValueFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_value);
 
